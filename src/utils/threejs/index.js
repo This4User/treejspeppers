@@ -45,11 +45,12 @@ class BoxScene {
 		this.intersects = this.raycaster.intersectObjects(this.scene.children);
 
 		if (this.intersects[0] && this.intersects[0].object === this.box) {
-			const axis = Math.random() < 0.5;
-			const rotation = axis ? {x: Math.random() * Math.PI * 2,} : {y: Math.random() * Math.PI * 2,};
+			const axis = ["x", "y", "z"][Math.floor(Math.random() * 3)];
+			const rotation = {};
+			rotation[axis] = Math.random() * Math.PI * 2;
 			rotation.duration = 1;
 
-			this.animationsTimeline.to(this.box.rotation, rotation);
+			this.animationsTimeline.to(this.box.rotation, rotation, this.animationsTimeline.time());
 		}
 	};
 
