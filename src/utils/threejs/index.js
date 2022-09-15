@@ -1,9 +1,9 @@
 import {fragmentShader, vertexShader} from "./shaders";
 import * as THREE from "three";
-import {TWEEN} from "three/addons/libs/tween.module.min";
-import {gsap} from "gsap";
 
 class BoxScene {
+	activeRotation = [];
+	targetRotation = {};
 
 	initGame(targetElement) {
 		this.initCanvas(targetElement);
@@ -12,7 +12,6 @@ class BoxScene {
 		this.initScene();
 		this.initCustomBox();
 		this.initInteraction();
-		this.initGSAP();
 		this.initOnResize();
 	}
 
@@ -32,11 +31,6 @@ class BoxScene {
 		this.canvas.addEventListener("click", this.canvasEvent);
 	}
 
-	initGSAP() {
-		this.animationsTimeline = gsap.timeline();
-		this.animationsTimeline.smoothChildTiming = true;
-	}
-
 	canvasEvent = (event) => {
 		this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
 		this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -46,13 +40,30 @@ class BoxScene {
 
 		if (this.intersects[0] && this.intersects[0].object === this.box) {
 			const axis = ["x", "y", "z"][Math.floor(Math.random() * 3)];
-			const rotation = {};
-			rotation[axis] = Math.random() * Math.PI * 2;
-			rotation.duration = 1;
+			const rotationValue = Math.random() * 4;
+			const targetRotation = (this.targetRotation[axis] || 0) + rotationValue;
+			console.log(`${axis} : ${targetRotation}`);
+			this.targetRotation[axis] = targetRotation;
 
-			this.animationsTimeline.to(this.box.rotation, rotation, this.animationsTimeline.time());
+			this.activeRotation.push({
+				axis,
+				value: rotationValue,
+				target: targetRotation
+			});
 		}
 	};
+
+	renderAnimation() {
+		const tick = 0.02;
+
+		this.activeRotation.forEach(rotation => {
+			if (this.box.rotation[rotation.axis] + tick < rotation.target) {
+				this.box.rotation[rotation.axis] += tick;
+			} else {
+				this.activeRotation = this.activeRotation.filter(currentRotation => currentRotation.value !== rotation.value);
+			}
+		});
+	}
 
 	initCamera(fov = 75, aspect = 2, near = 10, far = 100) {
 		this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
@@ -116,8 +127,8 @@ class BoxScene {
 
 		this.box.material.uniforms.time.value = time * 10;
 		this.renderer.render(this.scene, this.camera);
-		TWEEN.update();
 		this.animationId = requestAnimationFrame(this.render);
+		this.renderAnimation();
 	};
 
 	renderScene() {
